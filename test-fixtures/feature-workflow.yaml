@@ -1,0 +1,56 @@
+# Test Feature Workflow - Minimal 2-phase workflow for testing
+metadata:
+  name: "Feature Development"
+  description: "Simple 2-phase feature workflow for testing"
+  created: "2025-10-11"
+  workflow_type: "feature"
+
+commands:
+  test: "echo 'Running tests'"
+  build: "echo 'Building'"
+
+phase:
+  - id: "design"
+    name: "Design"
+    order: 1
+    purpose: "Plan the feature"
+    gates:
+      - "design_complete"
+      - "requirements_clear"
+
+  - id: "implement"
+    name: "Implementation"
+    order: 2
+    purpose: "Build the feature"
+    gates:
+      - "code_complete"
+      - "tests_passing"
+
+gates:
+  design_complete:
+    description: "Design document created"
+    phase: "design"
+    validation_hint: "Check design document exists"
+
+  requirements_clear:
+    description: "Requirements documented"
+    phase: "design"
+    validation_hint: "Verify requirements are clear"
+
+  code_complete:
+    description: "Code implemented"
+    phase: "implement"
+    validation_hint: "Check code is written"
+
+  tests_passing:
+    description: "Tests pass"
+    phase: "implement"
+    validation_hint: "Run test suite"
+
+principles:
+  test_driven: true
+  incremental: true
+
+quality:
+  test_coverage_min: 70
+  documentation_required: true

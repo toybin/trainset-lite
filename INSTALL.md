@@ -2,19 +2,38 @@
 
 Trainset Lite is a lightweight workflow system for AI-assisted development. This guide covers installation across different AI platforms.
 
+## Prerequisites
+
+**Required:**
+- **yq** - YAML/TOML query tool for parsing workflow files
+  - macOS: `brew install yq`
+  - Linux: `wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq && chmod +x /usr/local/bin/yq`
+  - Or see: https://github.com/mikefarah/yq#install
+
+**Optional:**
+- bash 4.0+ (usually pre-installed)
+- git (for version control of workflow files)
+
 ## Quick Install
 
 ### One-Line Installation
 
 ```bash
-# From GitHub (once published)
+# From GitHub (interactive mode - will prompt for platform)
 curl -fsSL https://raw.githubusercontent.com/toybin/trainset-lite/main/install.sh | bash
+
+# Non-interactive with platform specified
+curl -fsSL https://raw.githubusercontent.com/toybin/trainset-lite/main/install.sh | TRAINSET_PLATFORM=claude bash
+curl -fsSL https://raw.githubusercontent.com/toybin/trainset-lite/main/install.sh | TRAINSET_PLATFORM=opencode bash
+curl -fsSL https://raw.githubusercontent.com/toybin/trainset-lite/main/install.sh | TRAINSET_PLATFORM=other bash
 
 # Or clone and install
 git clone https://github.com/toybin/trainset-lite.git
 cd trainset-lite
-bash install.sh
+bash install.sh --platform claude
 ```
+
+**Note:** The installer will check for `yq` and warn if not found.
 
 ### What Gets Installed
 
@@ -56,11 +75,14 @@ your-project/
 ```
 
 **Available commands:**
-- `/status` - Show progress
-- `/advance` - Next phase
-- `/gate-check` - Check readiness
-- `/context` - Project info
-- `/setup` - Initialize
+- `/status` - Show current story progress
+- `/advance` - Move to next phase
+- `/gate-check` - Check readiness to advance
+- `/context` - Show project context
+- `/setup` - Initialize new workflow
+- `/new-story` - Create new story/task/lesson
+- `/list-stories` - List all stories
+- `/switch` - Switch active story
 
 ---
 
@@ -142,14 +164,30 @@ bash install.sh
 # Follow prompts to select platform
 ```
 
-### Force Platform
+### Specify Platform
 
+Three methods to specify platform:
+
+**Method 1: Command-line flag**
 ```bash
-# Set environment variable
-PLATFORM=claude bash install.sh
-PLATFORM=opencode bash install.sh
-PLATFORM=other bash install.sh
+bash install.sh --platform claude
+bash install.sh --platform opencode
+bash install.sh --platform other
 ```
+
+**Method 2: Environment variable**
+```bash
+TRAINSET_PLATFORM=claude bash install.sh
+TRAINSET_PLATFORM=opencode bash install.sh
+TRAINSET_PLATFORM=other bash install.sh
+```
+
+**Method 3: For curl | bash (non-interactive)**
+```bash
+curl -fsSL https://raw.githubusercontent.com/.../install.sh | TRAINSET_PLATFORM=claude bash
+```
+
+All methods are equivalent - use whichever is most convenient.
 
 ### Skip Installation
 
@@ -236,12 +274,37 @@ bash install.sh
 ### Scripts Not Working
 
 ```bash
+# Check yq is installed
+yq --version
+# Should show: yq (https://github.com/mikefarah/yq/) version X.X.X
+
+# Install yq if missing
+brew install yq  # macOS
+# or see https://github.com/mikefarah/yq#install
+
 # Check bash version
 bash --version  # Need 4.0+
 
 # Test individual script
 bash -x .trainset/scripts/status.sh
 # -x shows debug output
+```
+
+### yq Not Found Error
+
+If you see `yq not found` errors:
+
+```bash
+# Install yq
+brew install yq  # macOS with Homebrew
+
+# Or download binary (Linux)
+wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+sudo mv yq_linux_amd64 /usr/local/bin/yq
+sudo chmod +x /usr/local/bin/yq
+
+# Verify installation
+yq --version
 ```
 
 ---
@@ -261,9 +324,11 @@ bash install.sh
 ### Preserve Your Workflow
 
 Your workflow files are safe:
-- `.trainset/WORKFLOW.md` (your custom workflow)
-- `.trainset/CONTEXT.md` (your project details)
-- `.trainset/PROGRESS.md` (your progress)
+- `.trainset/workflow.yaml` (your workflow definition)
+- `.trainset/state.yaml` (your progress state)
+- `.trainset/WORKFLOW.md` (narrative explanations)
+- `.trainset/CONTEXT.md` (project details)
+- `.trainset/INTERVIEW.md` (interview responses)
 
 Scripts/commands are updated, but your data remains.
 
@@ -299,10 +364,11 @@ rm TRAINSET.md             # Other platforms
 
 ## Getting Help
 
-- **Documentation:** `.trainset/README.md`
-- **Bash helpers:** `.trainset/scripts/README.md`
-- **Design docs:** `.trainset/BASH_HELPERS.md`
+- **Documentation:** `README.md` (root of repo)
+- **Quick Start:** `QUICKSTART.md`
+- **Bash scripts:** `.trainset/scripts/README.md`
 - **Template library:** `.trainset/template-library.md`
+- **YAML schemas:** `schema/workflow.yaml` and `schema/state.yaml`
 
 ---
 

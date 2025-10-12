@@ -10,25 +10,23 @@ You are helping set up **Trainset Lite** - a lightweight workflow system using m
 
 ### 1. Conduct Interview
 
-- Read `.trainset/starter/interviews/base.md` 
+- Read `.trainset/interviews/base.md`
 - Read relevant domain-specific interview (development.md, learning.md, etc.)
 - Ask the user these questions and capture their responses
-- Create `INTERVIEW.md` in project root with their answers
+- Document their responses for reference
 
 ### 2. Generate Workflow Files
 
-**Step 1: Create Scaffolds** (run these inline)
+**Step 1: Create Scaffolds** (run this inline)
 
-!`bash .trainset/scripts/create-workflow.sh`
-!`bash .trainset/scripts/create-context.sh`
-!`bash .trainset/scripts/create-progress.sh`
+!`bash .trainset/scripts/init-workflow.sh`
 
-These commands create files with `[FILL IN]` placeholders for all mandatory sections.
+This command creates WORKFLOW.md, CONTEXT.md, and PROGRESS.md with `[FILL IN]` placeholders for all mandatory sections.
 
 **Step 2: Synthesize Content**
 
 Now read:
-- `.trainset/starter/template-library.md` for patterns and guidance
+- `.trainset/template-library.md` for patterns and guidance
 - The interview responses you collected
 
 Based on the interview, fill in all `[FILL IN]` placeholders in:

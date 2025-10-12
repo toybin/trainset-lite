@@ -1,0 +1,56 @@
+# Test Bugfix Workflow - Minimal 2-phase workflow for testing
+metadata:
+  name: "Bug Fix"
+  description: "Simple 2-phase bugfix workflow for testing"
+  created: "2025-10-11"
+  workflow_type: "bugfix"
+
+commands:
+  test: "echo 'Running tests'"
+  debug: "echo 'Debugging'"
+
+phase:
+  - id: "reproduce"
+    name: "Reproduce Bug"
+    order: 1
+    purpose: "Reproduce the bug reliably"
+    gates:
+      - "bug_reproduced"
+      - "test_written"
+
+  - id: "fix"
+    name: "Fix Bug"
+    order: 2
+    purpose: "Fix the bug and verify"
+    gates:
+      - "bug_fixed"
+      - "tests_pass"
+
+gates:
+  bug_reproduced:
+    description: "Bug can be reproduced consistently"
+    phase: "reproduce"
+    validation_hint: "Verify bug reproduces reliably"
+
+  test_written:
+    description: "Regression test written"
+    phase: "reproduce"
+    validation_hint: "Check regression test exists"
+
+  bug_fixed:
+    description: "Bug is fixed"
+    phase: "fix"
+    validation_hint: "Verify bug no longer occurs"
+
+  tests_pass:
+    description: "All tests pass"
+    phase: "fix"
+    validation_hint: "Run full test suite"
+
+principles:
+  regression_prevention: true
+  test_driven: true
+
+quality:
+  test_coverage_min: 80
+  documentation_required: true

@@ -1,0 +1,70 @@
+# Trainset Lite - Project Configuration Schema
+# This file defines project type and terminology for work items
+
+# Project metadata
+metadata:
+  name: "Example Project"
+  description: "Brief description of what this project does"
+  created: "2025-10-11"
+  project_type: "development"  # Options: development, learning, documentation, research, custom
+
+# Terminology configuration
+# Defines what you call discrete work items (stories/tasks/lessons/etc.)
+terminology:
+  # Singular form (e.g., "story", "task", "lesson", "section", "experiment")
+  singular: "story"
+
+  # Plural form (e.g., "stories", "tasks", "lessons", "sections", "experiments")
+  plural: "stories"
+
+  # Directory name where work items are stored
+  directory: "stories"
+
+  # Examples by project type:
+  # Development: singular: "story" or "task", plural: "stories" or "tasks", directory: "stories" or "tasks"
+  # Learning: singular: "lesson", plural: "lessons", directory: "lessons"
+  # Documentation: singular: "section", plural: "sections", directory: "sections"
+  # Research: singular: "experiment", plural: "experiments", directory: "experiments"
+  # Custom: Use any terms that fit your domain
+
+# Default workflow
+# The workflow to use when creating new work items without specifying one
+default_workflow: "feature-workflow"
+
+# Available workflows
+# List of workflow templates available for use
+workflows:
+  - id: "feature-workflow"
+    name: "Feature Development"
+    description: "Default workflow for building new features"
+    file: "workflows/feature-workflow.yaml"
+
+  # Optional additional workflows:
+  # - id: "bugfix-workflow"
+  #   name: "Bug Fix"
+  #   description: "Workflow for investigating and fixing bugs"
+  #   file: "workflows/bugfix-workflow.yaml"
+  #
+  # - id: "docs-workflow"
+  #   name: "Documentation"
+  #   description: "Workflow for writing documentation"
+  #   file: "workflows/docs-workflow.yaml"
+
+# Project context
+context:
+  tech_stack: "Go, SQLite, Cobra CLI"
+  domain: "Task management CLI"
+  team_size: "solo"  # Options: solo, small (2-5), medium (6-15), large (15+)
+
+# Quality standards (optional)
+quality:
+  test_coverage_min: 70
+  code_review_required: false
+  documentation_required: true
+
+# Notes:
+# - This file is created during /setup by the AI interviewer
+# - The terminology fields affect slash command names and prompts
+# - The directory field determines where work items are stored (.trainset/stories/ or .trainset/tasks/, etc.)
+# - Multiple workflows allow different processes for different work types
+# - This structure is compatible with Trainset Full for easy migration

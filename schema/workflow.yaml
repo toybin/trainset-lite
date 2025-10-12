@@ -1,0 +1,82 @@
+# workflow.yaml - Workflow Template Definition
+# This file defines a reusable workflow template with phases, gates, and commands.
+# Workflows are stored in .trainset/workflows/ directory.
+# Multiple stories can reference the same workflow template.
+# Generated during setup, and additional workflows can be created as needed.
+
+metadata:
+  name: "Project Name"
+  description: "Brief project description"
+  created: "2025-10-11"
+  workflow_type: "custom"  # custom, learning, feature, refactor, etc.
+
+# Commands define common development tasks
+# These can be referenced in phase gates and slash commands
+commands:
+  test: "command to run tests"
+  lint: "command to run linter"
+  build: "command to build project"
+  run: "command to run project"
+  format: "command to format code"
+
+# Phases define the major stages of your project
+# Each phase has gates that must pass before advancing
+phase:
+  - id: "phase_1"
+    name: "Phase 1 Name"
+    order: 1
+    purpose: "What this phase accomplishes and why it exists"
+    # Gates are validation criteria for this phase
+    # Each gate should be specific and verifiable
+    gates:
+      - "gate_1_id"
+      - "gate_2_id"
+      - "gate_3_id"
+
+  - id: "phase_2"
+    name: "Phase 2 Name"
+    order: 2
+    purpose: "What this phase accomplishes"
+    gates:
+      - "gate_4_id"
+      - "gate_5_id"
+
+# Gate definitions provide context for each validation criterion
+# The actual pass/fail status is tracked in state.yaml
+gates:
+  gate_1_id:
+    description: "Human-readable description of what this gate validates"
+    phase: "phase_1"
+    validation_hint: "How to verify this gate is satisfied"
+
+  gate_2_id:
+    description: "Another validation criterion"
+    phase: "phase_1"
+    validation_hint: "Check that X exists and Y works"
+
+  gate_3_id:
+    description: "Final criterion for phase 1"
+    phase: "phase_1"
+    validation_hint: "Run this command and verify output"
+
+  gate_4_id:
+    description: "Phase 2 criterion"
+    phase: "phase_2"
+    validation_hint: "Test passes and coverage > 80%"
+
+  gate_5_id:
+    description: "Another phase 2 criterion"
+    phase: "phase_2"
+    validation_hint: "All features implemented and documented"
+
+# Principles and guidelines (optional but recommended)
+principles:
+  learning_focused: true
+  incremental: true
+  validation_driven: true
+
+# Quality standards (optional)
+quality:
+  test_coverage_min: 80
+  documentation_required: true
+  code_review: false

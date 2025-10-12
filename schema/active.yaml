@@ -1,0 +1,14 @@
+# Trainset Lite - Active Story Pointer
+# This file points to the currently active work item
+
+# Active story ID
+active_story: "001-user-authentication"
+
+# Last updated
+updated: "2025-10-11"
+
+# Notes:
+# - This file is updated by switch-story.sh when switching between work items
+# - All workflow scripts (status.sh, advance-phase.sh, update-gate.sh, etc.) read this file
+#   to determine which story to operate on
+# - Simple single-value file for easy querying: yq '.active_story' active.yaml

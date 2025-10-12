@@ -1,110 +1,138 @@
 #!/usr/bin/env bash
+# Advance to the next phase after validating current phase gates
+# Updates active story's story.yaml with new phase information
+# Requires: yq (https://github.com/mikefarah/yq)
+
 set -euo pipefail
 
 TRAINSET_DIR="${TRAINSET_DIR:-.trainset}"
-PROGRESS_FILE="$TRAINSET_DIR/PROGRESS.md"
-WORKFLOW_FILE="$TRAINSET_DIR/WORKFLOW.md"
+HIERARCHY_FILE="$TRAINSET_DIR/hierarchy.yaml"
+ACTIVE_FILE="$TRAINSET_DIR/active.yaml"
 
-if [[ ! -f "$PROGRESS_FILE" ]]; then
-    echo "{\"success\": false, \"error\": \"PROGRESS.md not found. Run /setup first.\"}" >&2
+# Check if files exist
+if [[ ! -f "$HIERARCHY_FILE" ]]; then
+    echo '{"success": false, "error": "hierarchy.yaml not found - run /setup first"}' >&2
     exit 1
 fi
+
+if [[ ! -f "$ACTIVE_FILE" ]]; then
+    echo '{"success": false, "error": "No active story. Create one with /new-story"}' >&2
+    exit 1
+fi
+
+# Check if yq is installed
+if ! command -v yq &> /dev/null; then
+    echo '{"error": "yq not found - install from https://github.com/mikefarah/yq", "success": false}' >&2
+    exit 1
+fi
+
+# Get active story
+ACTIVE_STORY=$(yq '.active_story' "$ACTIVE_FILE")
+TERMINOLOGY_DIRECTORY=$(yq '.terminology.directory' "$HIERARCHY_FILE")
+STORY_DIR="$TRAINSET_DIR/$TERMINOLOGY_DIRECTORY"
+STORY_FILE="$STORY_DIR/$ACTIVE_STORY/story.yaml"
+
+# Check if story exists
+if [[ ! -f "$STORY_FILE" ]]; then
+    echo "{\"success\": false, \"error\": \"Active story not found: $STORY_FILE\"}" >&2
+    exit 1
+fi
+
+# Get workflow file
+workflow_id=$(yq '.workflow' "$STORY_FILE")
+WORKFLOW_FILE="$TRAINSET_DIR/workflows/${workflow_id}.yaml"
 
 if [[ ! -f "$WORKFLOW_FILE" ]]; then
-    echo "{\"success\": false, \"error\": \"WORKFLOW.md not found. Run /setup first.\"}" >&2
+    echo "{\"success\": false, \"error\": \"Workflow not found: $WORKFLOW_FILE\"}" >&2
     exit 1
 fi
 
-CURRENT_PHASE=$(grep -m 1 "^## Current Phase:" "$PROGRESS_FILE" | sed 's/^## Current Phase: Phase \([0-9]*\).*/\1/' || echo "")
+# Get current phase
+current_phase_id=$(yq '.progress.current_phase' "$STORY_FILE")
+current_phase_order=$(yq ".phase[] | select(.id == \"$current_phase_id\") | .order" "$WORKFLOW_FILE")
+current_phase_name=$(yq ".phase[] | select(.id == \"$current_phase_id\") | .name" "$WORKFLOW_FILE")
 
-if [[ -z "$CURRENT_PHASE" ]]; then
-    echo "{\"success\": false, \"error\": \"Could not determine current phase from PROGRESS.md\"}" >&2
+# Validate gates are passed
+gates=$(yq ".phase[] | select(.id == \"$current_phase_id\") | .gates[]" "$WORKFLOW_FILE")
+
+completed=0
+total=0
+failed_gates=()
+
+while IFS= read -r gate; do
+  if [ -n "$gate" ]; then
+    total=$((total + 1))
+    status=$(yq ".gate_status.$gate" "$STORY_FILE")
+    if [ "$status" = "true" ]; then
+      completed=$((completed + 1))
+    else
+      failed_gates+=("$gate")
+    fi
+  fi
+done <<< "$gates"
+
+remaining=$((total - completed))
+
+# Check if ready to advance
+if [[ $remaining -gt 0 ]]; then
+    echo "{\"success\": false, \"gate_ready\": false, \"completed\": $completed, \"remaining\": $remaining, \"total\": $total, \"message\": \"Gate not ready: $remaining of $total gate(s) remaining\"}"
     exit 1
 fi
 
-COMPLETED=$(grep -c "^- \[x\]" "$PROGRESS_FILE" 2>/dev/null || echo "0")
-REMAINING=$(grep -c "^- \[ \]" "$PROGRESS_FILE" 2>/dev/null || echo "0")
-COMPLETED=${COMPLETED//[^0-9]/}
-REMAINING=${REMAINING//[^0-9]/}
-TOTAL=$((COMPLETED + REMAINING))
+# Find next phase
+next_phase_order=$((current_phase_order + 1))
+next_phase_id=$(yq ".phase[] | select(.order == $next_phase_order) | .id" "$WORKFLOW_FILE")
 
-if [[ $REMAINING -gt 0 ]]; then
-    echo "{\"success\": false, \"gate_ready\": false, \"completed\": $COMPLETED, \"remaining\": $REMAINING, \"total\": $TOTAL, \"message\": \"Gate not ready: $REMAINING of $TOTAL items remaining\"}"
-    exit 1
-fi
+# Check if there is a next phase
+if [[ -z "$next_phase_id" ]] || [[ "$next_phase_id" == "null" ]]; then
+    # Mark story as completed
+    yq -i ".metadata.status = \"completed\"" "$STORY_FILE"
+    yq -i ".metadata.updated = \"$(date +%Y-%m-%d)\"" "$STORY_FILE"
 
-NEXT_PHASE=$((CURRENT_PHASE + 1))
-
-NEXT_PHASE_TITLE=$(grep "^### Phase $NEXT_PHASE:" "$WORKFLOW_FILE" | sed 's/^### Phase [0-9]*: //' || echo "")
-
-if [[ -z "$NEXT_PHASE_TITLE" ]]; then
-    echo "{\"success\": false, \"final_phase\": true, \"message\": \"Congratulations! You've completed the final phase. No more phases to advance to.\"}"
+    echo "{\"success\": true, \"final_phase\": true, \"story_completed\": true, \"message\": \"Congratulations! Story '$ACTIVE_STORY' is complete. All phases finished.\"}"
     exit 0
 fi
 
-NEXT_PHASE_PURPOSE=$(awk "/^### Phase $NEXT_PHASE:/,/^### Phase [0-9]*:/" "$WORKFLOW_FILE" | grep "^\*\*Purpose:\*\*" | sed 's/^\*\*Purpose:\*\* //' || echo "")
+# Get next phase details
+next_phase_name=$(yq ".phase[] | select(.id == \"$next_phase_id\") | .name" "$WORKFLOW_FILE")
+next_phase_purpose=$(yq ".phase[] | select(.id == \"$next_phase_id\") | .purpose" "$WORKFLOW_FILE")
 
-NEXT_PHASE_GATE=$(awk "/^### Phase $NEXT_PHASE:/,/^### Phase [0-9]*:/" "$WORKFLOW_FILE" | sed -n '/^\*\*Gate:\*\*/,/^\*\*Ready to advance/p' | grep "^- \[ \]" || echo "")
+# Backup story file
+BACKUP_FILE="${STORY_FILE}.bak"
+cp "$STORY_FILE" "$BACKUP_FILE"
 
-BACKUP_FILE="${PROGRESS_FILE}.bak"
-cp "$PROGRESS_FILE" "$BACKUP_FILE"
-
+# Get current date
 CURRENT_DATE=$(date +%Y-%m-%d)
 
-cat > "$PROGRESS_FILE" << EOF
-# Progress: $(grep "^# Progress:" "$BACKUP_FILE" | sed 's/^# Progress: //')
+# Update story file with new phase
+yq -i ".progress.current_phase = \"$next_phase_id\"" "$STORY_FILE"
+yq -i ".progress.phase_started = \"$CURRENT_DATE\"" "$STORY_FILE"
+yq -i ".progress.phases_complete += [\"$current_phase_id\"]" "$STORY_FILE"
+yq -i ".metadata.updated = \"$CURRENT_DATE\"" "$STORY_FILE"
 
-## Current Phase: Phase $NEXT_PHASE - $NEXT_PHASE_TITLE
-
-**Started:** $CURRENT_DATE
-**Purpose:** $NEXT_PHASE_PURPOSE
-
----
-
-## Phase $NEXT_PHASE Checklist
-
-$NEXT_PHASE_GATE
-
----
-
-## Progress Summary
-
-**Completed:**
-- Phase $CURRENT_PHASE completed on $CURRENT_DATE
-
-**In Progress:**
-- Phase $NEXT_PHASE started on $CURRENT_DATE
-
-**Not Started:**
-- Upcoming phases
-
----
-
-## Gate Check: Not Ready ❌
-
-**Status:** 0/$(echo "$NEXT_PHASE_GATE" | wc -l | tr -d ' ') items complete
-
-**Needs:**
-- All Phase $NEXT_PHASE checklist items
-
----
-
-## Notes
-
-### Recent Progress
-- $CURRENT_DATE: Advanced to Phase $NEXT_PHASE
-
-EOF
-
-REMAINING_PHASES=$(grep "^### Phase [0-9]*:" "$WORKFLOW_FILE" | tail -n +$((NEXT_PHASE + 1)) || echo "")
-
-if [[ -n "$REMAINING_PHASES" ]]; then
-    echo "" >> "$PROGRESS_FILE"
-    echo "## Upcoming" >> "$PROGRESS_FILE"
-    echo "" >> "$PROGRESS_FILE"
-    echo "$REMAINING_PHASES" | while read -r line; do
-        echo "**$line**" >> "$PROGRESS_FILE"
-    done
+# Update status to in_progress if not already
+current_status=$(yq '.metadata.status' "$STORY_FILE")
+if [[ "$current_status" == "not_started" ]]; then
+    yq -i ".metadata.status = \"in_progress\"" "$STORY_FILE"
 fi
 
-echo "{\"success\": true, \"previous_phase\": $CURRENT_PHASE, \"current_phase\": $NEXT_PHASE, \"phase_title\": \"$NEXT_PHASE_TITLE\", \"phase_purpose\": \"$NEXT_PHASE_PURPOSE\", \"backup\": \"$BACKUP_FILE\", \"message\": \"Advanced to Phase $NEXT_PHASE: $NEXT_PHASE_TITLE\"}"
+# Update stats
+phases_completed=$(yq '.progress.phases_complete | length' "$STORY_FILE")
+gates_passed=$(yq '[.gate_status[] | select(. == true)] | length' "$STORY_FILE")
+total_gates=$(yq '.stats.total_gates' "$STORY_FILE")
+total_phases=$(yq '.stats.total_phases' "$STORY_FILE")
+
+yq -i ".stats.phases_completed = $phases_completed" "$STORY_FILE"
+yq -i ".stats.gates_passed = $gates_passed" "$STORY_FILE"
+
+# Calculate completion percentage
+completion_percentage=0
+if [[ $total_phases -gt 0 ]]; then
+    completion_percentage=$(echo "scale=1; ($phases_completed / $total_phases) * 100" | bc)
+fi
+yq -i ".stats.completion_percentage = $completion_percentage" "$STORY_FILE"
+
+# Add session entry
+yq -i ".sessions += [{\"date\": \"$CURRENT_DATE\", \"phase\": \"$next_phase_id\", \"work_summary\": \"Advanced from $current_phase_name to $next_phase_name\", \"gates_completed\": [], \"notes\": \"Phase $current_phase_order complete\"}]" "$STORY_FILE"
+
+echo "{\"success\": true, \"previous_phase\": \"$current_phase_id\", \"previous_phase_order\": $current_phase_order, \"current_phase\": \"$next_phase_id\", \"current_phase_order\": $next_phase_order, \"phase_name\": \"$next_phase_name\", \"phase_purpose\": \"$next_phase_purpose\", \"backup\": \"$BACKUP_FILE\", \"message\": \"Advanced to Phase $next_phase_order: $next_phase_name\"}"

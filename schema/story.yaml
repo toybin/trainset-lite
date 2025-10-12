@@ -1,0 +1,93 @@
+# Trainset Lite - Story State Schema
+# This file tracks the state of an individual work item (story/task/lesson/etc.)
+
+# Story metadata
+metadata:
+  id: "001"
+  slug: "001-user-authentication"
+  title: "User Authentication System"
+  description: "Implement JWT-based authentication with login and logout"
+  created: "2025-10-11"
+  updated: "2025-10-11"
+  status: "in_progress"  # Options: not_started, in_progress, completed, archived
+
+# Workflow reference
+workflow: "feature-workflow"  # References a workflow in .trainset/workflows/
+
+# Current progress
+progress:
+  current_phase: "implementation"  # Current phase ID from workflow
+  phase_started: "2025-10-11"
+  phases_complete: []  # Array of completed phase IDs
+  # phases_complete: ["planning_and_design"]  # Example after completing first phase
+
+# Gate status
+# Each key is a gate_id from the workflow's current phase
+# Value is true (passed) or false (not passed)
+gate_status:
+  # Phase 1 gates (example from feature workflow planning phase):
+  requirements_documented: false
+  api_design_complete: false
+  data_model_defined: false
+  approach_validated: false
+  edge_cases_identified: false
+
+  # Phase 2 gates (example from implementation phase):
+  core_logic_implemented: false
+  unit_tests_passing: false
+  integration_tests_added: false
+  error_handling_complete: false
+  code_documented: false
+
+  # Phase 3 gates (example from integration phase):
+  integrated_with_codebase: false
+  e2e_tests_passing: false
+  ux_polished: false
+  performance_acceptable: false
+  documentation_updated: false
+
+  # Phase 4 gates (example from review phase):
+  code_reviewed: false
+  feedback_addressed: false
+  ci_passing: false
+  deployed: false
+  post_deploy_verified: false
+
+# Statistics
+stats:
+  total_phases: 4
+  phases_completed: 0
+  total_gates: 20
+  gates_passed: 0
+  completion_percentage: 0
+
+# Session log (optional)
+# Track work sessions for retrospectives
+sessions:
+  - date: "2025-10-11"
+    phase: "planning_and_design"
+    work_summary: "Created initial design document and API contracts"
+    gates_completed: ["requirements_documented", "api_design_complete"]
+    notes: "Decided to use JWT tokens instead of sessions for stateless auth"
+
+# Tags (optional)
+# Help organize and filter stories
+tags:
+  - "auth"
+  - "security"
+  - "backend"
+
+# Related stories (optional)
+# Track dependencies between work items
+related:
+  blocks: []  # Story IDs that this story blocks
+  blocked_by: []  # Story IDs that block this story
+  related_to: []  # Story IDs that are loosely related
+
+# Notes:
+# - This file is created by /new-story command
+# - Updated by update-gate.sh when gates are marked complete
+# - Updated by advance-phase.sh when advancing to next phase
+# - The gate_status section should match gates defined in the referenced workflow
+# - All statistics are calculated by bash scripts using yq queries
+# - This structure is compatible with Trainset Full for easy migration
